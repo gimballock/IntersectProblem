@@ -26,8 +26,18 @@ Bounding Boxe (axis-aligned): Box doesn't rotate as the bounded object changes, 
 - not intersecting: boxes are more than r1 + r2 distance away from each other
 - intersecting:     circles are less than r1 + r2 distance away from each other
 
-Convex-hulls: Compute bounding shape that ignores all concavity,
+Convex-hulls: Compute bounding shape that ignores all concavity
 - e.g. a 5-sided start would become a pentagon, pacman w/ a face mask
+- Non-convex shapes can be decomposed into convex ones, so this is a building block for more general shapes.
+- SAT: Separating Axis Theorem
+  - Does there exist a line seperating the two objects?
+  - Consider the plane of each face of the two shapes.
+  - See if verticies of the two shape's projected onto the plane form non-overlapping ranges
+- GJK:
+  - Solves a related geometrical problem on a composite shape formed from the original two using the Minkowsky difference.
+  - Detailed explination here: https://www.youtube.com/watch?v=ajv46BSqcK4
+
+
 - https://www.bowdoin.edu/~ltoma/teaching/cs3250-CompGeom/spring17/Lectures/cg-convexintersection.pdf
 
 Ray-casting: ?
@@ -67,3 +77,10 @@ In 3 dimensions its more complicated but we can see some patterns:
 - if any dimension is non-intersecting then the overall state is non-intersecting
 - otherwise if any dimension is ambigious then the overall state is ambigious
 - finally all dimensions must be intersecting so overall is intersecting
+
+
+
+
+Thoughts on convex-hull intersection testing:
+
+These shapes are composed of vertices, edges and faces

@@ -1,11 +1,13 @@
 import {
+    Color,
     WebGLRenderer, Scene, PerspectiveCamera,
     ConeGeometry, TorusKnotGeometry, BoxBufferGeometry,
-    MeshPhongMaterial, MeshNormalMaterial,
-    Vector3, Box3, Sphere,
+    MeshPhongMaterial, MeshNormalMaterial, LineBasicMaterial,
+    Vector3, Box3, Sphere, PlaneGeometry,
     DirectionalLight,
-    Mesh,
-    BoxHelper, AxesHelper
+    Mesh, LineSegments,
+    BoxHelper, AxesHelper,
+    SphereGeometry, EdgesGeometry
 } from "three";
 
 import { DragControls } from "three/examples/jsm/controls/DragControls.js";
@@ -24,11 +26,14 @@ const IntersectState = {
 	INTERSECT: "Intersecting"
 }
 
-const Dimension = { X:0, Y:1, Z:2 }
+const DIMENSION = { X:0, Y:1, Z:2 }
+
+const RENDER_MODE = { BOXES, SPHERES }
 
 let prevTime = 0
 
 let renderer, scene, camera;
+let mode = 
 let helpers = new Map();
 
 let primaryObj, secondaryObj;
@@ -36,23 +41,59 @@ let primaryObj, secondaryObj;
 /**
  * Length of the path the secondary object traverses in it's motion loop
  */
-let pathLength = 20
+let pathLength = 10
 
-let velocity = new Vector3(0, 0, -1);  
 
-function makeInstance(geometry, color, x, y) {
-    const material = new MeshPhongMaterial({ color });
+function makeInstance(geometry, color, x, y, z = 0) {
+    const material = new MeshPhongMaterial({ color: color });
     const objMesh = new Mesh(geometry, material);
-    
-    objMesh.position.x = x;
-    objMesh.position.y = y;
-    
     scene.add(objMesh);
+    geometry.translate(x,y,z)
     
-    helpers.set( objMesh, new BoxHelper( objMesh ) );    
+    helpers.set(objMesh, new BoxHelper( objMesh ));    
     scene.add(helpers.get(objMesh));
 
+
+    objMesh.geometry.computeBoundingSphere();
+    const boundingSphere = objMesh.geometry.boundingSphere
+    const sphereGeometry = new EdgesGeometry(new SphereGeometry(boundingSphere.radius, 8, 6), 1);
+    const sphereMaterial = new LineBasicMaterial({color: new Color("yellow")});
+    const sphereMesh = new LineSegments(sphereGeometry, sphereMaterial);
+    sphereMesh.position.copy(boundingSphere.center)
+    scene.add(sphereMesh);
+
     return objMesh;
+}
+
+
+/**
+ * Create xy, yz, zx unit planes and the three axies
+ */
+function initAxiesAndPlanes() {
+    const planeSize = 9
+    const planeGeom = new PlaneGeometry(planeSize, planeSize)
+    const planeMaterial = new MeshPhongMaterial({ color: new Color("lightgrey")})
+
+    const planeObjs = [
+        new Mesh(planeGeom, planeMaterial), 
+        new Mesh(planeGeom, planeMaterial), 
+        new Mesh(planeGeom, planeMaterial)];
+
+    planeObjs[0].translateX(planeSize/2)
+                .translateY(planeSize/2);
+
+    planeObjs[1].translateY(planeSize/2)
+                .translateZ(planeSize/2)
+                .rotateY(Math.PI / 2);
+
+    planeObjs[2].translateX(planeSize/2)
+                .translateZ(planeSize/2)
+                .rotateX(-Math.PI / 2);
+    
+    planeObjs.forEach(planeObj => scene.add(planeObj));
+
+    // Draw the 3 axes
+    scene.add( new AxesHelper(planeSize + 1) );
 }
 
 function init() {
@@ -79,24 +120,27 @@ function init() {
 
     camera.position.z = 15;
 
-
     // Create a light
     const color = 0xFFFFFF;
     const intensity = 1;
     const light = new DirectionalLight(color, intensity);
-    light.position.set(-1, 2, 4);
+    light.position.set(10, 8, 6);
     scene.add(light);
 
-    // Draw the 3 axes
-    scene.add( new AxesHelper( 20 ) );
+    // By default a Plane object is spanned by the XZ axes
+    initAxiesAndPlanes();
+    
 
+    // Create primary and secondary objects
     const primaryGeom = new TorusKnotGeometry();
-    primaryObj = makeInstance(primaryGeom, 0x44aa88, 0, 0);
+    primaryObj = makeInstance(primaryGeom, 0x44aa88, 2, 2, 5);
 
     const secondaryGeom = new ConeGeometry();
-    secondaryObj = makeInstance(secondaryGeom, 0x8844aa, 0, 0)
+    secondaryObj = makeInstance(secondaryGeom, 0x8844aa, 2, 2, 2)
 
-    const controls = new DragControls( [ primaryObj ], camera, renderer.domElement );
+
+    // Enable secondary object to be dragged around
+    const controls = new DragControls( [ secondaryObj ], camera, renderer.domElement );
     controls.addEventListener( 'drag', () => {
         requestAnimationFrame(render);
     } );
@@ -116,22 +160,20 @@ function updateScene(time) {
     // primaryObj.rotation.x = rot;
     // primaryObj.rotation.y = rot;
 
-    secondaryObj.rotation.x = -rot;
-    secondaryObj.rotation.y = -rot;
+    // secondaryObj.rotation.x = -rot;
+    // secondaryObj.rotation.y = -rot;
 
     // update positions
     // secondary object should move past the primary object centered at the origin 
     // - modulate the time by the length of the path you want it to traverse
     // - now subtract half of the total path length to center the path on the origin
     let t = time % pathLength;
-    let target = t - pathLength / 2;
+    let target = t;
 
     secondaryObj.position.z = target;
 
     // update bounding boxes
     helpers.forEach((helper) => { helper.update() })
-    // primaryObj.geometry.computeBoundingSphere();
-    // secondaryObj.geometry.computeBoundingSphere();
 
 }
 
@@ -216,8 +258,8 @@ function render(time) {
             .applyMatrix4( secondaryObj.matrixWorld );
         const bb2Lengths = bb2.getSize(new Vector3())
 
-        for (const dimName in Dimension) {
-            const dimIdx = Dimension[dimName]; // get the index of the dimension: [x,y,z] -> [0,1,2]
+        for (const dimName in DIMENSION) {
+            const dimIdx = DIMENSION[dimName]; // get the index of the dimension: [x,y,z] -> [0,1,2]
             let dimState = IntersectState.INTERSECT
 
             // For the current dimension (x,y,z) set these values
