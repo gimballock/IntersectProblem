@@ -4,6 +4,8 @@
 
 _Disclaimer_: I haven't written 3D graphics code in 15 years and I haven't written a project in node.js in probably 6 years. I have previously used OpenGL and DirectX with C++ in school and also the java 3d rendering libraries.
 
+Tl;dr: Video [demo](https://photos.google.com/share/AF1QipPlIuUlWe_RPehW9lifvbO9RtCvE6RQqrQFOueIU0qf17jSkbr8M8iz94kUjQrqgA/photo/AF1QipOw5gkr0U1WnpupLN14vWw2YFb_vsc2g9QMbdqQ?key=RDdDdTVXbGNCbnZua2kydXdwVDVGWXBUVmtJbzVR)
+
 I found `THREE.js` looking for a 3D rendering engine to leverage for this problem. Being web based simplified deployment by having support for web browsers.
 
 - Supports 2d, 3d, bounding box, bounding sphere, lots of shapes
