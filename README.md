@@ -2,11 +2,11 @@
 
 `For some specified pair of shapes, write a program that determins if they are intersecting or not-intersecting or neither (ambigious). `
 
-_Disclaimer_: I haven't written 3D graphics code in 15 years and I haven't written a project in node.js in probably 6 years. I have previously used OpenGL and DirectX with c++ in school and also the java 3d rendering libraries.
+_Disclaimer_: I haven't written 3D graphics code in 15 years and I haven't written a project in node.js in probably 6 years. I have previously used OpenGL and DirectX with C++ in school and also the java 3d rendering libraries.
 
 I found `THREE.js` looking for a 3D rendering engine to leverage for this problem. Being web based simplified deployment by having support for web browsers.
 
-- supports 2d, 3d, bounding box, bounding sphere, lots of shapes
+- Supports 2d, 3d, bounding box, bounding sphere, lots of shapes
 - Pretty well supported by the community
 - easily to deploy (no compiling, complex build process)
 
@@ -56,7 +56,7 @@ In 3D it's more complicated but the same patterns persist:
   - Actually SAT seeks to find a plane / line to project the two shapes onto such that they form 1-dimensional ranges where it's easy to see if they intersect or not.
   - SAT considers the lines / planes of each face of the two shapes.
   - This is a natural extension from the previous two techiques because it uses the same range checks as bounding sphere and bounding boxes.
-  - One optimization might be to sort the faces / lines by thier orientation to the distance vector between the shapes.
+  - One optimization I thought of might be to sort the faces / lines by thier orientation to the distance vector between the shapes (cosine similarity).
   - Faces roughly parallel to the direction vector are more likely to expose non intersections.
   - To combine the different dimensions use the same logic as with bounding boxes.
 
@@ -66,20 +66,26 @@ In 3D it's more complicated but the same patterns persist:
   - Detailed explination here: https://www.youtube.com/watch?v=ajv46BSqcK4
   - This method is more efficient but less intuitive
 
-- Here is another 2d method I ame across:
+- Here is another method I came across, not sure what it's called:
   - https://www.bowdoin.edu/~ltoma/teaching/cs3250-CompGeom/spring17/Lectures/cg-convexintersection.pdf
+  - This method extends to 3d by searching connected sequences of faces. Like peeling an orange, except you peel two oranges at the same time until you find that one is intersecting the other.
 
-Non-convex facited shape:
+**General closed polygonal shapes**:
 
 - Set of verticies, edges, faces forming a closed surface.
 - Use exact methods to compute intersectons of lines and planes with other lines and planes.
-- Can use bounding volume methods above to "fail fast"
-- Bounding volume intersections provides a region of space to search for intersecting geometry using exact intersect methods.
 - Find coincident geometry:
   - point-point, point-edges, point-faces, edge-face, face-face
   - These would indicate _ambigious_ status.
 - Find actual intersections:
   - edge-edge, edge-face, face-face
+- Strategy:
+  - Recall that finding any evidence that the shapes do not intersect means you can stop searching and return that result.
+  - So use a bounding volume methods above to "fail fast"
+  - If you do not find a _non-intersection_ result note that an _ambigious_ or _intersection_ result may actually be non-intersecting on the underlying shapes.
+  - If ambigious bounding volume search the underlying geometry for coincident objects. If something from each object is touching the coincident points/edges/faces of the bounding volumes then you have proved _ambigious_ intersection and can stop searching.
+  - Finally if the bounding volumes result in an intersection you can use the intersected region-of-space to eliminate verticies, associated edges and faces that lie outside of that volume.
+  - From here you have to brute-force try all the combinations of things between the two objects.
 
 ## To build
 
@@ -113,10 +119,12 @@ To add new dependency to package.json use:
 
 ## Misc files
 
-`webpack.config.js`: Specifies that `src/index.js` is the "main" input to be repackaged as `dist/main.js`
+`webpack.config.js`: Specifies that `src/index.js` is the "main" input to be repackaged as `dist/main.js`.
 
-`.gitignore`: Hides generated files from git status to avoid data bloat
+`.gitignore`: Hides generated files from `git status` to avoid data bloat.
 
-`package.json`: Node package manager config file holds the npm dependencies and the build script to trigger webpack
+`package.json`: Config file holds the `npm` dependencies and the build script to trigger a `webpack` "build".
 
-`dist/index.html`: Wrapper script to read main.js, can probably generate this somehow
+`package-lock.json`: Documents npm packages installed along with thier versions. Used by `npm` to allow other users to exactly reproduce the same build as me or at least attempt to.
+
+`dist/index.html`: Wrapper script to read main.js, can probably generate this somehow.
