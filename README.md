@@ -155,6 +155,7 @@ In the browser's [developer console](https://balsamiq.com/support/faqs/browserco
     22 Bounding Box Overlapping
     ...
 
-Using the keyboard:
+Using the keyboard to cycle through available intersection modes:
 
-- The 'N' key you can change the intersection mode to the next method. This will cycle through each available method.
+- The 'N' and 'P' keys switche to the next or previous intersection mode in a cycle.
+- Intersection mode controls the wireframe surrounding the object and the intersection test method used to detect collisions.
