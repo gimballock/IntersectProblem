@@ -47,7 +47,7 @@ const SHAPE_CONFIGS = {
     PRIMARY: { color: 0x44aa88, position: new Vector3(2,2,5) },
     SECONDARY: { color: 0x8844aa, position: new Vector3(2,2,2) }};
 
-// --------------- GLOBAL VARS -----------------
+// ----------------- GLOBALS -------------------
 
 // Basic scene objects
 let renderer, scene, camera;
@@ -94,10 +94,14 @@ function initAxiesAndPlanes() {
     
     planeObjs.forEach(planeObj => scene.add(planeObj));
 
-    // Draw the 3 axes
+    // Draw the 3 axes, make them extend out a little further than the 3 walls
     scene.add( new AxesHelper(planeSize + 1) );
 }
 
+/**
+ * Create associated wireframe box and sphere
+ * @param {Mesh} objMesh 
+ */
 function createWireframes(objMesh) {
     // Generate and save the box wireframe in case we use that render mode
     let wireframeBoxMesh = new BoxHelper( objMesh );
@@ -125,6 +129,13 @@ function createWireframes(objMesh) {
         wf.visible = (currMode == mode);}
 }
 
+/**
+ * Add 3d primitive geometry to the scene using default material, also create associated wireframes
+ * @param {*} geometry Primitive shape
+ * @param {*} color Initial color
+ * @param {*} position Initial position
+ * @returns {Mesh} geometry + material
+ */
 function makeInstance(geometry, color, position) {    
     const material = new MeshPhongMaterial({ color: color });
     const objMesh = new Mesh(geometry, material);
@@ -135,6 +146,11 @@ function makeInstance(geometry, color, position) {
     return objMesh;
 }
 
+/**
+ * Setup the THREE.js environment to render content to the screen: 
+ *   renderer, scene, camera, light, axies, walls and the two objects
+ * Also allow primaryObject to be dragged around the ground plane with the mouse
+ */
 function init() {
     // Test for WEBGL availability
     if (!WEBGL.isWebGLAvailable()) {
@@ -190,15 +206,22 @@ function init() {
     } );
 }
 
+/**
+ * Sets the associated wireframe box of the provided object to the object's position
+ * @param {Object3D} objMesh Either primary or secondary object
+ */
 function updateBoundingBox(objMesh) {
-    let boxes = wireframes.get(RENDER_MODE.BOXES)
+    const boxes = wireframes.get(RENDER_MODE.BOXES)
     boxes.get(objMesh).update()
 }
 
+/**
+ * Sets the associated wireframe sphere of the provided object to the object's position
+ * @param {Object3D} objMesh Either primary or secondary object
+ */
 function updateBoundingSphere(objMesh) {
-    let spheres = wireframes.get(RENDER_MODE.SPHERES)
-    let sphereMesh = spheres.get(objMesh)
-    objMesh.getWorldPosition(sphereMesh.position)
+    const spheres = wireframes.get(RENDER_MODE.SPHERES);
+    objMesh.getWorldPosition(spheres.get(objMesh).position)
 }
 
 /**
@@ -232,6 +255,14 @@ function updateScene(time) {
         updateBoundingSphere(secondaryObj)}
 }
 
+/**
+ * Helper function for sphereIntersect that allows for unit testing
+ * @param {*} center1 sphere1's center
+ * @param {*} center2 sphere2's center
+ * @param {*} radius1 sphere1's radius
+ * @param {*} radius2 sphere2's radius
+ * @returns {IntersectState} whether the spheres touch or overlap or neither
+ */
 function sphereIntersectHelper(center1, center2, radius1, radius2) {
     let intersectState = IntersectState.INTERSECT
 
@@ -257,16 +288,17 @@ function sphereIntersectHelper(center1, center2, radius1, radius2) {
     return intersectState
 }
 
+/**
+ * Compute whether the primary and secondary spheres intersect, touch, or are completly disconnected from each other.
+ * @returns {IntersectState} whether the spheres touch or overlap or neither
+ */
 function sphereIntersect() {
-    let bs1 = (new Sphere())
-        .copy(primaryObj.geometry.boundingSphere)
+    const bs1 = (new Sphere()).copy(primaryObj.geometry.boundingSphere)
         .applyMatrix4( primaryObj.matrixWorld );
-    let bs2 = (new Sphere())
-        .copy(secondaryObj.geometry.boundingSphere)
+    const bs2 = (new Sphere()).copy(secondaryObj.geometry.boundingSphere)
         .applyMatrix4( secondaryObj.matrixWorld );
     
-    let intersectState = sphereIntersectHelper(bs1.center, bs2.center, bs1.radius, bs2.radius)
-
+    const intersectState = sphereIntersectHelper(bs1.center, bs2.center, bs1.radius, bs2.radius)
     return intersectState;
 }
 
