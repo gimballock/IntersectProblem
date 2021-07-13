@@ -1,9 +1,9 @@
 import {
     Color,
     WebGLRenderer, Scene, PerspectiveCamera,
-    ConeGeometry, TorusKnotGeometry, BoxBufferGeometry, DodecahedronGeometry,
-    MeshPhongMaterial, MeshNormalMaterial, LineBasicMaterial,
-    Vector3, Box3, Sphere, PlaneGeometry, Group,
+    TorusKnotGeometry, DodecahedronGeometry,
+    MeshPhongMaterial, LineBasicMaterial,
+    Vector3, Box3, Sphere, PlaneGeometry,
     DirectionalLight,
     Mesh, LineSegments,
     BoxHelper, AxesHelper,
@@ -15,9 +15,6 @@ import { WEBGL } from 'three/examples/jsm/WebGL.js';
 
 
 // --------------- CONSTANTS -----------------
-// Used to print status message every <LOG_INTERVAL> seconds 
-// by comparing current time to prevTime whenever render() is called
-const LOG_INTERVAL = 0.5;
 
 // Error term to decide if objects are "kissing" vs inersecting or not-intersecting
 const ERROR_TERM = 0.1;
@@ -54,9 +51,6 @@ let renderer, scene, camera;
 
 // Current render-mode & intersect test
 let mode = RENDER_MODE.BOXES;
-
-// For regular status-logs, this tracks the time of the last log msg
-let prevTime = 0
 
 // map of wireframe objects by type: spheres, boxes, convex-hulls
 let wireframes = new Map();
@@ -99,6 +93,20 @@ function initAxiesAndPlanes() {
 }
 
 /**
+ * We have wirframe meshes for each mode of each of the two objects. When the 
+ * render mode changes we must toggle the 'visible' flag of every one of these 
+ * meshes.
+ */
+function updateWireframes() {
+    [primaryObj, secondaryObj].forEach( objMesh => {
+        Object.values(RENDER_MODE).forEach(currMode => {
+            const wf = wireframes.get(currMode).get(objMesh)
+            wf.visible = (currMode == mode) 
+        })
+    })
+}
+
+/**
  * Create associated wireframe box and sphere
  * @param {Mesh} objMesh 
  */
@@ -121,12 +129,6 @@ function createWireframes(objMesh) {
     scene.add(objMesh);
     scene.add(wireframeBoxMesh);
     scene.add(wireframeSphereMesh);
-
-    // Update scene graph to show correct wireframe models
-    for(const currModeName in RENDER_MODE) {
-        const currMode = RENDER_MODE[currModeName];
-        const wf = wireframes.get(currMode).get(objMesh)
-        wf.visible = (currMode == mode);}
 }
 
 /**
@@ -145,6 +147,46 @@ function makeInstance(geometry, color, position) {
     
     return objMesh;
 }
+
+/**
+ * For the RENDER_MODE list return the value succeeding the one saved to 'mode' by the specified offset.
+ * IE offset = 1 returns the next element, offset = -1 returns the previous element.
+ * @param {Integer} offset How far in the list of RENDER_MODES to increment by
+ * @returns offset = 1 returns the next element
+ *          offset = -1 returns the previous element
+ */
+function changeRenderMode(offset) {
+    const modeValues = Object.values(RENDER_MODE)
+    let nextModeIdx = (modeValues.indexOf(mode) + offset) % modeValues.length
+
+    // mod can produce negative values from [-length, 0] if provided a negative offset
+    // So add length to the result to shift the answer back to the [0, length] range
+    if(nextModeIdx < 0)
+        nextModeIdx += modeValues.length
+    
+    return modeValues[nextModeIdx];
+}
+
+/**
+ * Keyboard event callback function used to process RENDER_MODE toggling.
+ * Capture the p/n keys, update the render mode and switch wireframe models.
+ * @param {THREE.js event object} event 
+ * @returns null
+ */
+function onDocumentKeyDown(event) {
+    let nextMode = () => { return changeRenderMode(1) }
+    let prevMode = () => { return changeRenderMode(-1) }
+    let keyCode = event.which;
+    
+    if (keyCode == 78)           // 'n' = 78
+        mode = nextMode();
+    else if (keyCode == 80)      // 'p' = 80
+        mode = prevMode();
+    else return
+    console.log(keyCode == 78 ? "Next" : "Previous", "intersect mode:", mode);
+    
+    updateWireframes();
+};
 
 /**
  * Setup the THREE.js environment to render content to the screen: 
@@ -197,6 +239,8 @@ function init() {
         SHAPE_CONFIGS.SECONDARY.color, 
         SHAPE_CONFIGS.SECONDARY.position)
 
+    // Update scene graph to show correct wireframe models
+    updateWireframes()
 
     // Enable secondary object to be dragged around
     const controls = new DragControls( [ primaryObj ], camera, renderer.domElement );
@@ -204,6 +248,8 @@ function init() {
         // restrict mouse dragging to the floor plane (xz-plane actually)
         primaryObj.position.y = SHAPE_CONFIGS.PRIMARY.position.y
     } );
+
+    document.addEventListener("keydown", onDocumentKeyDown, false);
 }
 
 /**
@@ -467,7 +513,7 @@ function render(time) {
     secondaryObj.material.color.set(secondaryColor);
 
     // Log result to console
-    console.log(Math.trunc(time), mode, state);
+    console.log("", Math.trunc(time), mode, state);
 
     // draw scene
     renderer.render(scene, camera);
