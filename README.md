@@ -147,12 +147,12 @@ Once the html page is opened you will see:
 
 In the browser's [developer console](https://balsamiq.com/support/faqs/browserconsole/) you can see some log messages indicating the results of the live intersection tests:
 
-    20 "Bounding Box" "Overlapping"
-    21 "Bounding Box" "Overlapping"
-    21 "Bounding Box" "..."
-    21 "Bounding Box" "Touching"
-    21 "Bounding Box" "Overlapping"
-    22 "Bounding Box" "Overlapping"
+    20 Bounding Box Overlapping
+    21 Bounding Box Overlapping
+    21 Bounding Box ...
+    21 Bounding Box Touching
+    21 Bounding Box Overlapping
+    22 Bounding Box Overlapping
     ...
 
 Using the keyboard:
