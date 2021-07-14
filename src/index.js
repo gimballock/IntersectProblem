@@ -526,31 +526,34 @@ function render(time) {
 // ----------
 
 // Degenerate spheres
-const degenerate_sphere_test = sphereIntersectHelper(new Vector3(0,0,0), new Vector3(0,0,0), 0, 0) == IntersectState.INTERSECT
-console.assert( degenerate_sphere_test, "Degenerate spheres should intersect");
+const degenerate_sphere_test = sphereIntersectHelper(new Vector3(0,0,0), new Vector3(0,0,0), 0, 0) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(new Vector3(10,10,10), new Vector3(10,10,10), 0, 0) == IntersectState.AMBIGUOUS
+console.assert( degenerate_sphere_test, "Degenerate spheres should be ambiguous");
 
-// Test error threshold and different sizes
-const overlapping_sphere_test = sphereIntersectHelper(new Vector3(10,10,10), new Vector3(10,10,10), 0, 0) == IntersectState.INTERSECT
-    && sphereIntersectHelper(new Vector3(10,10,10), new Vector3(10,10,10+(ERROR_TERM/2)), 10, 100) == IntersectState.INTERSECT
-console.assert( overlapping_sphere_test, "Overlapping spheres should intersect");
+// Same center different sizes
+const eclipse_sphere_test = sphereIntersectHelper(new Vector3(10,10,10), new Vector3(10,10,10+(ERROR_TERM/2)), 10, 100) == IntersectState.NO_INTERSECT
+    && sphereIntersectHelper(new Vector3(10,10,10), new Vector3(10,10,10), 50, 50) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(new Vector3(10,10,10), new Vector3(10,10,10), 0, 50) == IntersectState.NO_INTERSECT
+console.assert( eclipse_sphere_test, "Same center different sizes should not intersect, can touch if sizes match");
 
 // Check a regular sphere against a degenerate sphere as the first and second object
 const one_degenerate_sphere_test = sphereIntersectHelper(new Vector3(0,0,0), new Vector3(1,0,0), 1, 0) == IntersectState.AMBIGUOUS
     && sphereIntersectHelper(new Vector3(0,0,0), new Vector3(0,2,0), 0, 2) == IntersectState.AMBIGUOUS
-    && sphereIntersectHelper(new Vector3(0,2,0), new Vector3(0,4,0), 2, 0) == IntersectState.AMBIGUOUS;
+    && sphereIntersectHelper(new Vector3(0,2,0), new Vector3(0,4,0), 2, 0) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(new Vector3(0,2,0), new Vector3(0,4,0), 1.5, 0) == IntersectState.NO_INTERSECT
+    && sphereIntersectHelper(new Vector3(0,2,0), new Vector3(0,4,0), 2.5, 0) == IntersectState.NO_INTERSECT;
 console.assert( one_degenerate_sphere_test, "Touching spheres should be ambiguous");
 
 const no_intersect_sphere_test = sphereIntersectHelper(new Vector3(0,0,0), new Vector3(3,0,0), 1, 1) == IntersectState.NO_INTERSECT;
 console.assert( no_intersect_sphere_test, "Spheres separated should not intersect");
 
-// Check error term and different sizes
-const perfect_intersect_sphere_test = sphereIntersectHelper(new Vector3(1,1,1), new Vector3(1,1,1), 1, 1) == IntersectState.INTERSECT
-    && sphereIntersectHelper(new Vector3(0,0,0), new Vector3(0,0+(ERROR_TERM/2,0), 2, 20) == IntersectState.INTERSECT);
-console.assert( perfect_intersect_sphere_test, "Spheres separated should not intersect");
+// Check interior touch
+const interior_touch_sphere_test = sphereIntersectHelper(new Vector3(0,0,0), new Vector3(9,0,0), 10, 1) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(new Vector3(10,0,0), new Vector3(1,0,0), 10, 1) == IntersectState.AMBIGUOUS;
+console.assert( interior_touch_sphere_test, "Spheres touching from inside should be anbiguous");
 
 // Check half overlap and full eclipse
-const intersect_sphere_test = sphereIntersectHelper(new Vector3(1,1,1), new Vector3(1,1,2), 1, 1) == IntersectState.INTERSECT
-    && sphereIntersectHelper(new Vector3(0,0,0), new Vector3(1,0+(ERROR_TERM/2,0), 2, 20) == IntersectState.INTERSECT);
+const intersect_sphere_test = sphereIntersectHelper(new Vector3(1,1,1), new Vector3(1,1,2), 1, 1) == IntersectState.INTERSECT;
 console.assert( intersect_sphere_test, "Spheres separated should not intersect");
 
 
