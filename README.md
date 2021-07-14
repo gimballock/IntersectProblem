@@ -23,58 +23,29 @@ More realistically you would use whatever shape you want, for example in a video
 
 **Bounding Sphere**: Intersections are computed using the radius and center of each circle
 
-- _Ambiguous_: circles are just touching, i.e. Their distance apart is the same as r1 + r2
-- _Not intersecting_: circles are more than r1 + r2 distance away from each other
-- _Intersecting_: circles are less than r1 + r2 distance away from each other
+1.  With d > r1 + r2 circles do not touch: NO-INTERSECT
 
-**Update**: I just noticed that I'm not handling interior cases correctly. I was treating them as solid shapes instead of hollow.
+2.  With d = r2 + r1 circles touch from outside: AMBIGUOUS
 
-With that additional rule the number of cases jumps from 3 to 14!
+3.  With r2 - r1 < d < r1 + r2 circles interlinked: INTERSECT
+    impossible with r1 = 0, works w/ r1 = r2
 
-Relation between the radii of the two circles r1 and r2:
+4.  With d = r2 - r1 circles touch from inside: AMBIGUOUS
 
-1. Double degenerate circles: r1 + r2 = 0
-2. Equal sized circles (non-zero): r1 = r2
-3. Singe degenerate circle: r1 + r2 = r1
-4. Different sized circles (non-zero): r1 < r2
+5.  With d < r2 - r1 circles don't touch from inside: NO-INTERSECT
+    impossible with r1 = r2, works w/ r1 = 0
 
-Relation between the radii and the distance:
+    let isTouchingOutside = (d - (r2 + r1) <= ERROR)
+    let isTouchingInside = (d - (r2 - r1) <= ERROR)
+    if(isTouchingInside || isTouchingOutside)
+    return AMBIGUOUS
 
-1. Double degenerate circles are two points in space they can only perfectly overlap
+    // spheres are disconnected from inside or outside
+    if(d > (r1 + r2) || d < (r2 - r1))
+    return NO-INTERSECT
 
-   a) With d = 0 the shapes touch but do not cross: AMBIGUOUS
-
-   b) With d > 0 the shapes do not touch at all: NO-INTERSECT
-
-2. Equal sized circles can perfectly overlap, just touch
-
-   a) With d = 0 the shapes touch but do not cross: AMBIGUOUS
-
-   b) With 0 < d < 2r the shapes cross: INTERSECT
-
-   c) With d = 2r the shapes touch but do not cross: AMBIGUOUS
-
-   d) With d > 2r the shapes do not touch: NO-INTERSECT
-
-3. Singe degenerate circle (a point) cannot cross the other circle
-
-   a) With d < r1 the point is inside the circle: NO-INTERSECT
-
-   b) With d = r1 the point is on the circle edge: AMBIGUOUS
-
-   c) With d > r1 the point is outside the circle: NO-INTERSECT
-
-4. Different sized circles (non-zero)
-
-   a) With d < r2 - r1 circles eclipse w/o touching: NO-INTERSECT
-
-   b) With d = r2 - r1 circles eclipse and touch: AMBIGUOUS
-
-   c) With r2 - r1 < d < r2 + r1 circles overlap: INTERSECT
-
-   d) With d = r1 + r2 circles touch from outside: AMBIGUOUS
-
-   e) With d > r1 + r2 circles don't touch: NO-INTERSECT
+    // Finally it must be the case that: r2 - r1 < d < r1 + r2
+    return INTERSECT
 
 **Bounding Box** (axis-aligned): These boxes remain oriented to the XYz axis despite the orientation of the interior object. Parameterized by height, width and depth.
 

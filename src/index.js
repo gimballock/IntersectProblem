@@ -239,9 +239,9 @@ function init() {
         SHAPE_CONFIGS.SECONDARY.color, 
         SHAPE_CONFIGS.SECONDARY.position)
 
-    var hullGeometry = new THREE.ConvexGeometry(points);
-    hullMesh = createMesh(hullGeometry);
-    scene.add(hullMesh);
+    // var hullGeometry = new THREE.ConvexGeometry(points);
+    // hullMesh = createMesh(hullGeometry);
+    // scene.add(hullMesh);
     
     // Update scene graph to show correct wireframe models
     updateWireframes()
@@ -314,28 +314,22 @@ function updateScene(time) {
  * @returns {IntersectState} whether the spheres touch or overlap or neither
  */
 function sphereIntersectHelper(center1, center2, radius1, radius2) {
-    let intersectState = IntersectState.INTERSECT
+    let d = center1.distanceTo(center2)
 
-    let distance = center1.distanceTo(center2)
-    let radiusSum = radius1 + radius2
-    let termDiff = distance - radiusSum 
+    let radiiSum = radius1 + radius2
+    let radiiDiff = Math.abs(radius1 - radius2)
+    let isTouchingOutside = (Math.abs(d - radiiSum) <= ERROR_TERM)  // ()(  )
+    let isTouchingInside = (Math.abs(d - radiiDiff) <= ERROR_TERM)  // ( ( ))
+    
+    if(isTouchingOutside || isTouchingInside)
+        return IntersectState.AMBIGUOUS;
 
-    // Special case: zero distance spheres of any radius must intersect
-    if( distance < ERROR_TERM )
-        intersectState = IntersectState.INTERSECT;
-    
-    // With non-zero distance minus both radii equals zero (approx) if they are just touching
-    else if( Math.abs(termDiff) < ERROR_TERM )
-        intersectState = IntersectState.AMBIGUOUS;
-    
-    // If distance is greater than the sum of the radii then the spheres are not touching
-    else if( termDiff > 0 )
-        intersectState = IntersectState.NO_INTERSECT;
-    
-    // Otherwise the distance is less than the sum of the radii so the spheres are intersecting
-    // else intersectState = IntersectState.INTERSECT; <-- default value
+    // spheres are disconnected from inside or outside:   ( () )  OR  ()  ( )
+    if(d > radiiSum || d < radiiDiff)
+        return IntersectState.NO_INTERSECT;
 
-    return intersectState
+    // Finally it must be that: radiiDiff < d < radiiSum
+    return IntersectState.INTERSECT;
 }
 
 /**
