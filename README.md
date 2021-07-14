@@ -27,6 +27,55 @@ More realistically you would use whatever shape you want, for example in a video
 - _Not intersecting_: circles are more than r1 + r2 distance away from each other
 - _Intersecting_: circles are less than r1 + r2 distance away from each other
 
+**Update**: I just noticed that I'm not handling interior cases correctly. I was treating them as solid shapes instead of hollow.
+
+With that additional rule the number of cases jumps from 3 to 14!
+
+Relation between the radii of the two circles r1 and r2:
+
+1. Double degenerate circles: r1 + r2 = 0
+2. Equal sized circles (non-zero): r1 = r2
+3. Singe degenerate circle: r1 + r2 = r1
+4. Different sized circles (non-zero): r1 < r2
+
+Relation between the radii and the distance:
+
+1. Double degenerate circles are two points in space they can only perfectly overlap
+
+   a) With d = 0 the shapes touch but do not cross: AMBIGUOUS
+
+   b) With d > 0 the shapes do not touch at all: NO-INTERSECT
+
+2. Equal sized circles can perfectly overlap, just touch
+
+   a) With d = 0 the shapes touch but do not cross: AMBIGUOUS
+
+   b) With 0 < d < 2r the shapes cross: INTERSECT
+
+   c) With d = 2r the shapes touch but do not cross: AMBIGUOUS
+
+   d) With d > 2r the shapes do not touch: NO-INTERSECT
+
+3. Singe degenerate circle (a point) cannot cross the other circle
+
+   a) With d < r1 the point is inside the circle: NO-INTERSECT
+
+   b) With d = r1 the point is on the circle edge: AMBIGUOUS
+
+   c) With d > r1 the point is outside the circle: NO-INTERSECT
+
+4. Different sized circles (non-zero)
+
+   a) With d < r2 - r1 circles eclipse w/o touching: NO-INTERSECT
+
+   b) With d = r2 - r1 circles eclipse and touch: AMBIGUOUS
+
+   c) With r2 - r1 < d < r2 + r1 circles overlap: INTERSECT
+
+   d) With d = r1 + r2 circles touch from outside: AMBIGUOUS
+
+   e) With d > r1 + r2 circles don't touch: NO-INTERSECT
+
 **Bounding Box** (axis-aligned): These boxes remain oriented to the XYz axis despite the orientation of the interior object. Parameterized by height, width and depth.
 
 - _Ambiguous_: Boxes are just touching if their distance apart is the sum of their lengths for a given dimension.
