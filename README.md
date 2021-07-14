@@ -67,6 +67,47 @@ In 3D it's more complicated but the same patterns persist:
 - Otherwise if any dimension is ambiguous then the overall status is `ambiguous`
 - The only remaining alternative is that all dimensions are `intersecting`
 
+**Update**: I misread the assignment initially, this is the ammended analysis: Hollow intersect instead of solid intersect
+
+Provided a triple of single-dimensional intersect statuses, one for each dimension (x,y,z) where each can be any of (to, ti, nto, nti), this function returns an overall status from the set (NO_INTERSECT, INTERSECT, AMBIGUOUS)
+
+Single dimension statuses are defined as follows:
+
+Touching from the outside (TI)
+
+    |    +--+----+   min_1 + size_1 = min_2
+
+Touching from the inside (TI)
+
+    |    +--+=====+   min_1 + size_1 = min_2 + size_2
+
+OR
+
+    |    +====+---+   min_1 = min_2 and size_1 != size_2
+
+Not touching from the outside (NTO)
+
+    |    +--+ +---+   min_1 + size_1 < min_2
+
+Not touching from the inside (NTI)
+
+    |    +--+==+--+   min_1 + size_1 > min_2
+
+This table considers all the ways these can combine for 2 dimensions:
+
+|     | nto | to  | ti  | nti |
+| --- | --- | --- | --- | --- |
+| nto | nto | nto | nto | nto |
+| to  | nto | to  | to  | to  |
+| ti  | nto | to  | ti  | ti  |
+| nti | nto | to  | ti  | nti |
+
+These actually condense down into a couple simple rules
+
+1. If (either box is NTO) or (both boxes are NTI) --> NO_INTERSECT
+2. Otherwise if either box is TO or TI --> AMBIGUOUS
+3. Everything else --> INTERSECT
+
 **Convex-hulls**: Bounding shape that shrink wraps the interior object leaving no concavities on the surface.
 
 - e.g. a 5-sided star would become a pentagon
