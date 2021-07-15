@@ -457,84 +457,6 @@ function combinePartialBoxIntersects(perDimensionStatus) {
     return IntersectState.NO_INTERSECT;
 }
 
-// function partialBoxIntersect(bb1Min, bb2Min, bb1Size, bb2Size) {
-//     let dimState = IntersectState.INTERSECT
-
-//     // A) Special case: Coincident corresponding vertices (e.g. both bottom-left vertices match)
-//     //    - if a box's dimension is zero  --> ambiguous           [[]----------]
-//     //    - else                          --> intersecting        [[------]----]
-//     // Note: If both boxes have zero width then just touching means the same thing as intersecting!
-//     let isCoincident = (bb1Min == bb2Min)
-//     let isExactOverlap = isCoincident && (bb1Size == bb2Size)
-//     let isDegenerate = (bb1Size <= ERROR_TERM) || (bb2Size <= ERROR_TERM)
-    
-//     if(isExactOverlap)
-//         dimState = IntersectState.AMBIGUOUS;
-    
-//     else if(isCoincident)
-//         dimState = IntersectState.AMBIGUOUS;  // same start and both have non-zero range --> intersecting
-
-//     // B) Normal case: Ranges for the closer box and the further box have different start points
-//     //   AMBIGUOUS:  Width of closer box is equal to the distance to start of the other box  [-----][-----] 
-//     //   INTERSECT:  The distance away is less then the width of the closer box.             [----[===]---]
-//     //   NO-INTERSECT: The distance away is more then the width of the closer box.           [----]   [---]
-//     else {
-//         // 1) Rename box1 and box2 as nearBox and farBox since we know they are not the same location
-//         let [nearBoxMin, farBoxMin] = Math.abs(bb1Min) < Math.abs(bb2Min) ? [bb1Min, bb2Min] : [bb2Min, bb1Min]
-            
-//         // 2) Note distance between boxes AND width of nearest box
-//         let nearBoxLen = (nearBoxMin == bb1Min) ? bb1Size : bb2Size
-//         let distance = Math.abs(farBoxMin - nearBoxMin) // equivalently to using max point
-        
-//         // 3) Compare [distance between boxes] vs [width of the closer box]
-//         let termDiff = distance - nearBoxLen
-//         if( Math.abs(termDiff) < ERROR_TERM )
-//             dimState = IntersectState.AMBIGUOUS;
-//         else if( termDiff > 0)
-//             dimState = IntersectState.NO_INTERSECT;
-//         // else dimState = IntersectState.INTERSECT; <-- default value
-//     }
-
-//     return dimState
-// }
-
-// /**
-//  * Dimensionless intersection test used as a helper for boxIntersect
-//  *  To combine the vertical and horizontal intersections use the following table:
-//  * 
-//  *                    vertical
-//  * horizontal           | ambiguous        | intersecting     | non-intersecting
-//  *     -----------------+------------------+------------------+------------------
-//  *     ambiguous        | ambiguous        | ambiguous        | non-intersecting
-//  *     -----------------+------------------+------------------+------------------
-//  *     intersecting     | ambiguous        | intersecting     | non-intersecting
-//  *     -----------------+------------------+------------------+------------------
-//  *     non-intersecting | non-intersecting | non-intersecting | non-intersecting
-//  *
-//  * Combine the dimensional box states to get the overall box state:
-//  * - if any dimension is non-intersecting then the overall state is non-intersecting
-//  * - otherwise if any dimension is ambiguous then the overall state is ambiguous
-//  * - finally all dimensions must be intersecting so overall is intersecting
-//  * 
-//  * @param {*} perDimensionStatus 
-//  * @returns {IntersectState} intersectedness (if that's a word)
-//  */
-// function combinePartialBoxIntersects(perDimensionStatus) {
-//     let overallBoxState = IntersectState.INTERSECT
-//     for (const dimState of perDimensionStatus){
-//         // Any non-intersecting dimension short-circuits the overall calculation 
-//         if(dimState == IntersectState.NO_INTERSECT) {
-//             overallBoxState = IntersectState.NO_INTERSECT
-//             break; }
-
-//         // Any ambiguous status (assuming no non-intersecting statuses) becomes the overall status 
-//         const isAlreadyAmbigious = (overallBoxState == IntersectState.AMBIGUOUS)
-//         if(!isAlreadyAmbigious && dimState == IntersectState.AMBIGUOUS)
-//             overallBoxState = IntersectState.AMBIGUOUS;
-//     }
-//     return overallBoxState
-// }
-
 /**
  * Compute whether the primary and secondary boxes intersect, touch, or are completely disconnected from each other.
  * @returns {IntersectState} 3d connectedness between the two boxes
@@ -626,105 +548,106 @@ function render(time) {
 //   tests
 // ----------
 
-// // Degenerate spheres
-// const degenerate_sphere_test = sphereIntersectHelper(0, 0, 0) == IntersectState.AMBIGUOUS
-//     && sphereIntersectHelper(0, 0, 0) == IntersectState.AMBIGUOUS
-// console.assert( degenerate_sphere_test, "Degenerate spheres should be ambiguous");
+// --------- spheres ---------
+// Degenerate spheres
+const degenerate_sphere_test = sphereIntersectHelper(0, 0, 0) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(0, 0, 0) == IntersectState.AMBIGUOUS
+console.assert( degenerate_sphere_test, "Degenerate spheres should be ambiguous");
 
-// // Same center different sizes
-// const eclipse_sphere_test = sphereIntersectHelper(10+(ERROR_TERM/2), 10, 100) == IntersectState.NO_INTERSECT
-//     && sphereIntersectHelper(0, 50, 50) == IntersectState.AMBIGUOUS
-//     && sphereIntersectHelper(0, 0, 50) == IntersectState.NO_INTERSECT
-// console.assert( eclipse_sphere_test, "Same center different sizes should not intersect, can touch if sizes match");
+// Same center different sizes
+const eclipse_sphere_test = sphereIntersectHelper(10+(ERROR_TERM/2), 10, 100) == IntersectState.NO_INTERSECT
+    && sphereIntersectHelper(0, 50, 50) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(0, 0, 50) == IntersectState.NO_INTERSECT
+console.assert( eclipse_sphere_test, "Same center different sizes should not intersect, can touch if sizes match");
 
-// // Check a regular sphere against a degenerate sphere as the first and second object
-// const one_degenerate_sphere_test = sphereIntersectHelper(1, 1, 0) == IntersectState.AMBIGUOUS
-//     && sphereIntersectHelper(2, 0, 2) == IntersectState.AMBIGUOUS
-//     && sphereIntersectHelper(2, 2, 0) == IntersectState.AMBIGUOUS
-//     && sphereIntersectHelper(2, 1.5, 0) == IntersectState.NO_INTERSECT
-//     && sphereIntersectHelper(2, 2.5, 0) == IntersectState.NO_INTERSECT;
-// console.assert( one_degenerate_sphere_test, "Touching spheres should be ambiguous");
+// Check a regular sphere against a degenerate sphere as the first and second object
+const one_degenerate_sphere_test = sphereIntersectHelper(1, 1, 0) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(2, 0, 2) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(2, 2, 0) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(2, 1.5, 0) == IntersectState.NO_INTERSECT
+    && sphereIntersectHelper(2, 2.5, 0) == IntersectState.NO_INTERSECT;
+console.assert( one_degenerate_sphere_test, "Touching spheres should be ambiguous");
 
-// const no_intersect_sphere_test = sphereIntersectHelper(3, 1, 1) == IntersectState.NO_INTERSECT;
-// console.assert( no_intersect_sphere_test, "Spheres separated should not intersect");
+const no_intersect_sphere_test = sphereIntersectHelper(3, 1, 1) == IntersectState.NO_INTERSECT;
+console.assert( no_intersect_sphere_test, "Spheres separated should not intersect");
 
-// // Check interior touch
-// const interior_touch_sphere_test = sphereIntersectHelper(9, 10, 1) == IntersectState.AMBIGUOUS
-//     && sphereIntersectHelper(9, 10, 1) == IntersectState.AMBIGUOUS;
-// console.assert( interior_touch_sphere_test, "Spheres touching from inside should be anbiguous");
+// Check interior touch
+const interior_touch_sphere_test = sphereIntersectHelper(9, 10, 1) == IntersectState.AMBIGUOUS
+    && sphereIntersectHelper(9, 10, 1) == IntersectState.AMBIGUOUS;
+console.assert( interior_touch_sphere_test, "Spheres touching from inside should be anbiguous");
 
-// // Check half overlap and full eclipse
-// const intersect_sphere_test = sphereIntersectHelper(1, 1, 1) == IntersectState.INTERSECT;
-// console.assert( intersect_sphere_test, "Spheres separated should not intersect");
-
-
-// //---------------------------
-
-// // point-point tests
-// const pbi_point_point_overlap = partialBoxIntersect(0,0,0,0) == InnerIntersectState.TI
-// console.assert( pbi_point_point_overlap, "Degenerate case should be touch-inside");
-
-// const pbi_point_point_no_overlap = partialBoxIntersect(0,1,0,0) == InnerIntersectState.NTO
-//     && partialBoxIntersect(1,0,0,0) == InnerIntersectState.NTO
-// console.assert( pbi_point_point_no_overlap, "Degenerate case should be no-touch-outside");
-
-// // point-line tests
-// const pbi_point_line_touching = partialBoxIntersect(0,0,1,0) == InnerIntersectState.TI
-//                        && partialBoxIntersect(0,0,0,1) == InnerIntersectState.TI
-//                        && partialBoxIntersect(0,1,1,0) == InnerIntersectState.TI
-//                        && partialBoxIntersect(1,0,0,1) == InnerIntersectState.TI
-// console.assert( pbi_point_line_touching, "Point on ends of range should be touch-inside");
-
-// const pbi_point_line_not_touching_out = partialBoxIntersect(1,0,1,0) == InnerIntersectState.NTO
-//                                    && partialBoxIntersect(0,2,1,0) == InnerIntersectState.NTO
-// console.assert( pbi_point_line_not_touching_out, "Disconnected outside point should be no-touch-out");
+// Check half overlap and full eclipse
+const intersect_sphere_test = sphereIntersectHelper(1, 1, 1) == IntersectState.INTERSECT;
+console.assert( intersect_sphere_test, "Spheres separated should not intersect");
 
 
-// const pbi_point_line_not_touching_in = partialBoxIntersect(0,1,2,0) == InnerIntersectState.NTI
-//                                   && partialBoxIntersect(1,0,0,2) == InnerIntersectState.NTI
-// console.assert( pbi_point_line_not_touching_in, "Disconnected inside point should be no-touch-in");
+//--------- boxes ------------------
 
-// // line-line tests
-// const pbi_line_line_no_touch_out = partialBoxIntersect(0,2,1,1) == InnerIntersectState.NTO
-// console.assert( pbi_line_line_no_touch_out, "Disconnected lines should be no-touch-out");
+// point-point tests
+const pbi_point_point_overlap = partialBoxIntersect(0,0,0,0) == InnerIntersectState.TI
+console.assert( pbi_point_point_overlap, "Degenerate case should be touch-inside");
 
-// const pbi_line_line_no_touch_in = partialBoxIntersect(0,1,3,1) == InnerIntersectState.NTI
-// console.assert( pbi_line_line_no_touch_in, "Eclipsed lines should be no-touch-in");
+const pbi_point_point_no_overlap = partialBoxIntersect(0,1,0,0) == InnerIntersectState.NTO
+    && partialBoxIntersect(1,0,0,0) == InnerIntersectState.NTO
+console.assert( pbi_point_point_no_overlap, "Degenerate case should be no-touch-outside");
 
-// const pbi_line_line_touch_out = partialBoxIntersect(0,1,1,1) == InnerIntersectState.TO
-//                            && partialBoxIntersect(10,0,100,10) == InnerIntersectState.TO
-// console.assert( pbi_line_line_touch_out, "connected lines should be touch-out");
+// point-line tests
+const pbi_point_line_touching = partialBoxIntersect(0,0,1,0) == InnerIntersectState.TI
+                       && partialBoxIntersect(0,0,0,1) == InnerIntersectState.TI
+                       && partialBoxIntersect(0,1,1,0) == InnerIntersectState.TI
+                       && partialBoxIntersect(1,0,0,1) == InnerIntersectState.TI
+console.assert( pbi_point_line_touching, "Point on ends of range should be touch-inside");
 
-// const pbi_line_line_touch_in = partialBoxIntersect(0,0,2,1) == InnerIntersectState.TI  // left aligned
-//                           && partialBoxIntersect(0,1,2,1) == InnerIntersectState.TI  // right aligned
-// console.assert( pbi_line_line_touch_in, "same start diff lengths should be touch-in");
+const pbi_point_line_not_touching_out = partialBoxIntersect(1,0,1,0) == InnerIntersectState.NTO
+                                   && partialBoxIntersect(0,2,1,0) == InnerIntersectState.NTO
+console.assert( pbi_point_line_not_touching_out, "Disconnected outside point should be no-touch-out");
 
-// const pbi_line_line_intersect = partialBoxIntersect(0,1,2,2) == InnerIntersectState.I
-//                           && partialBoxIntersect(1,0,2,2) == InnerIntersectState.I
-// console.assert( pbi_line_line_intersect, "Regular intersections should return intersect");
 
-// const pbi_line_line_perfect = partialBoxIntersect(0,0,2,2) == InnerIntersectState.TI
-// console.assert( pbi_line_line_perfect, "Perfect overlap should return touch-in");
+const pbi_point_line_not_touching_in = partialBoxIntersect(0,1,2,0) == InnerIntersectState.NTI
+                                  && partialBoxIntersect(1,0,0,2) == InnerIntersectState.NTI
+console.assert( pbi_point_line_not_touching_in, "Disconnected inside point should be no-touch-in");
 
-// // NSO test
-// const combined_no_intersect_test = combinePartialBoxIntersects([InnerIntersectState.NTO,InnerIntersectState.NTO,InnerIntersectState.NTO]) == IntersectState.NO_INTERSECT
-//     && combinePartialBoxIntersects([InnerIntersectState.NTO,InnerIntersectState.I,InnerIntersectState.TI]) == IntersectState.NO_INTERSECT
-//     && combinePartialBoxIntersects([InnerIntersectState.TO,InnerIntersectState.NTO,InnerIntersectState.NTI]) == IntersectState.NO_INTERSECT
-//     && combinePartialBoxIntersects([InnerIntersectState.TO,InnerIntersectState.NTI,InnerIntersectState.NTO]) == IntersectState.NO_INTERSECT
-// console.assert( combined_no_intersect_test, "Any one NSO should return no-intersect");
+// line-line tests
+const pbi_line_line_no_touch_out = partialBoxIntersect(0,2,1,1) == InnerIntersectState.NTO
+console.assert( pbi_line_line_no_touch_out, "Disconnected lines should be no-touch-out");
 
-// // NSI test
-// const combined_nti_test = combinePartialBoxIntersects([
-//     InnerIntersectState.NTI,InnerIntersectState.NTI,InnerIntersectState.NTI]) == IntersectState.NO_INTERSECT
-// console.assert( combined_nti_test, "All three NSIs should be no-intersect");
+const pbi_line_line_no_touch_in = partialBoxIntersect(0,1,3,1) == InnerIntersectState.NTI
+console.assert( pbi_line_line_no_touch_in, "Eclipsed lines should be no-touch-in");
 
-// // TO
-// const combined_to_test = combinePartialBoxIntersects([InnerIntersectState.TO,InnerIntersectState.TI,InnerIntersectState.I]) == IntersectState.AMBIGUOUS
-// console.assert( combined_to_test, "TO dominated I, TI and NTI to produce ambiguous");
+const pbi_line_line_touch_out = partialBoxIntersect(0,1,1,1) == InnerIntersectState.TO
+                           && partialBoxIntersect(10,0,100,10) == InnerIntersectState.TO
+console.assert( pbi_line_line_touch_out, "connected lines should be touch-out");
 
-// // I test
-// const combined_intersect_test = combinePartialBoxIntersects([InnerIntersectState.I,InnerIntersectState.TI,InnerIntersectState.NTI]) == IntersectState.INTERSECT
-// console.assert( combined_intersect_test, "I dominated TI and NTI to produce intersect");
+const pbi_line_line_touch_in = partialBoxIntersect(0,0,2,1) == InnerIntersectState.TI  // left aligned
+                          && partialBoxIntersect(0,1,2,1) == InnerIntersectState.TI  // right aligned
+console.assert( pbi_line_line_touch_in, "same start diff lengths should be touch-in");
+
+const pbi_line_line_intersect = partialBoxIntersect(0,1,2,2) == InnerIntersectState.I
+                          && partialBoxIntersect(1,0,2,2) == InnerIntersectState.I
+console.assert( pbi_line_line_intersect, "Regular intersections should return intersect");
+
+const pbi_line_line_perfect = partialBoxIntersect(0,0,2,2) == InnerIntersectState.TI
+console.assert( pbi_line_line_perfect, "Perfect overlap should return touch-in");
+
+// NSO test
+const combined_no_intersect_test = combinePartialBoxIntersects([InnerIntersectState.NTO,InnerIntersectState.NTO,InnerIntersectState.NTO]) == IntersectState.NO_INTERSECT
+    && combinePartialBoxIntersects([InnerIntersectState.NTO,InnerIntersectState.I,InnerIntersectState.TI]) == IntersectState.NO_INTERSECT
+    && combinePartialBoxIntersects([InnerIntersectState.TO,InnerIntersectState.NTO,InnerIntersectState.NTI]) == IntersectState.NO_INTERSECT
+    && combinePartialBoxIntersects([InnerIntersectState.TO,InnerIntersectState.NTI,InnerIntersectState.NTO]) == IntersectState.NO_INTERSECT
+console.assert( combined_no_intersect_test, "Any one NSO should return no-intersect");
+
+// NSI test
+const combined_nti_test = combinePartialBoxIntersects([
+    InnerIntersectState.NTI,InnerIntersectState.NTI,InnerIntersectState.NTI]) == IntersectState.NO_INTERSECT
+console.assert( combined_nti_test, "All three NSIs should be no-intersect");
+
+// TO
+const combined_to_test = combinePartialBoxIntersects([InnerIntersectState.TO,InnerIntersectState.TI,InnerIntersectState.I]) == IntersectState.AMBIGUOUS
+console.assert( combined_to_test, "TO dominated I, TI and NTI to produce ambiguous");
+
+// I test
+const combined_intersect_test = combinePartialBoxIntersects([InnerIntersectState.I,InnerIntersectState.TI,InnerIntersectState.NTI]) == IntersectState.INTERSECT
+console.assert( combined_intersect_test, "I dominated TI and NTI to produce intersect");
 
 // TI test
 const combined_ti_test = combinePartialBoxIntersects([InnerIntersectState.TI,InnerIntersectState.NTI,InnerIntersectState.NTI]) == IntersectState.AMBIGUOUS
@@ -733,7 +656,6 @@ console.assert( combined_ti_test, "TI dominated NTI to produce ambiguous");
 console.log("--------- tests complete ----------")
 
 //---------------------------
-
 
 init()
 
