@@ -35,17 +35,17 @@ More realistically you would use whatever shape you want, for example in a video
 5.  With d < r2 - r1 circles don't touch from inside: NO-INTERSECT
     impossible with r1 = r2, works w/ r1 = 0
 
-    let isTouchingOutside = (d - (r2 + r1) <= ERROR)
-    let isTouchingInside = (d - (r2 - r1) <= ERROR)
-    if(isTouchingInside || isTouchingOutside)
-    return AMBIGUOUS
+        let isTouchingOutside = (d - (r2 + r1) <= ERROR)
+        let isTouchingInside = (d - (r2 - r1) <= ERROR)
+        if(isTouchingInside || isTouchingOutside)
+        return AMBIGUOUS
 
-    // spheres are disconnected from inside or outside
-    if(d > (r1 + r2) || d < (r2 - r1))
-    return NO-INTERSECT
+        // spheres are disconnected from inside or outside
+        if(d > (r1 + r2) || d < (r2 - r1))
+        return NO-INTERSECT
 
-    // Finally it must be the case that: r2 - r1 < d < r1 + r2
-    return INTERSECT
+        // Finally it must be the case that: r2 - r1 < d < r1 + r2
+        return INTERSECT
 
 **Bounding Box** (axis-aligned): These boxes remain oriented to the XYz axis despite the orientation of the interior object. Parameterized by height, width and depth.
 
