@@ -67,46 +67,66 @@ In 3D it's more complicated but the same patterns persist:
 - Otherwise if any dimension is ambiguous then the overall status is `ambiguous`
 - The only remaining alternative is that all dimensions are `intersecting`
 
+---
+
 **Update**: I misread the assignment initially, this is the ammended analysis: Hollow intersect instead of solid intersect
 
 Provided a triple of single-dimensional intersect statuses, one for each dimension (x,y,z) where each can be any of (to, ti, nto, nti), this function returns an overall status from the set (NO_INTERSECT, INTERSECT, AMBIGUOUS)
 
 Single dimension statuses are defined as follows:
 
-Touching from the outside (TI)
+Touching from the outside (TO)
 
-    |    +--+----+   min_1 + size_1 = min_2
+      |    +--+----+   min_1 + size_1 = min_2
 
 Touching from the inside (TI)
 
-    |    +--+=====+   min_1 + size_1 = min_2 + size_2
+      |    +--------+   min_1 + size_1 = min_2 + size_2
+      |       +-----+
 
 OR
 
-    |    +====+---+   min_1 = min_2 and size_1 != size_2
+      |    +--------+   min_1 = min_2 && size_1 != size_2
+      |    +----+
 
 Not touching from the outside (NTO)
 
-    |    +--+ +---+   min_1 + size_1 < min_2
+      |    +--+  +--+   min_1 + size_1 < min_2
 
 Not touching from the inside (NTI)
 
-    |    +--+==+--+   min_1 + size_1 > min_2
+      |    +--------+   min_1 + size_1 > min_2  &&  size_1 > size_2
+      |       +--+
 
-This table considers all the ways these can combine for 2 dimensions:
+Intersect (I)
 
-|     | nto | to  | ti  | nti |
-| --- | --- | --- | --- | --- |
-| nto | nto | nto | nto | nto |
-| to  | nto | to  | to  | to  |
-| ti  | nto | to  | ti  | ti  |
-| nti | nto | to  | ti  | nti |
+      |    +-----+      min_1 + size_1 > min_2  &&  size_1 < size_2
+      |       +-----+
 
-These actually condense down into a couple simple rules
+This table considers all the ways pairs of objects can be combined for 2 dimensions:
 
-1. If (either box is NTO) or (both boxes are NTI) --> NO_INTERSECT
-2. Otherwise if either box is TO or TI --> AMBIGUOUS
-3. Everything else --> INTERSECT
+|     | nto | to  | i   | ti  | nti |
+| --- | --- | --- | --- | --- | --- |
+| nto | nto | nto | nto | nto | nto |
+| to  | nto | to  | to  | to  | to  |
+| i   | nto | to  | i   | i   | i   |
+| ti  | nto | to  | i   | ti  | ti  |
+| nti | nto | to  | i   | ti  | nti |
+
+These convert to the overall-state like this:
+
+- nto, nti --> NO_INTERSECT
+- to, ti --> AMBIGUOUS
+- i --> INTERSECT
+
+These actually condense down into a couple simple rules:
+The algorithm:
+
+1. If any dimension is NTO --> NO_INTERSECT
+2. else if any dimension is TO --> AMBIGUOUS
+3. else if any dimension is I --> INTERSECT
+4. else if any dimension is TI --> AMBIGUOUS
+5. else all dimension must be NTI --> NO_INTERSECT
 
 **Convex-hulls**: Bounding shape that shrink wraps the interior object leaving no concavities on the surface.
 
