@@ -357,23 +357,28 @@ function sphereIntersect() {
  * Helper function for the overall AABB intersection test resolves the intersection status for a specific dimension.
  * 
  *  Touching from the outside (TO)
- *      |    +--+----+   min_1 + size_1 = min_2
+ *      |    +--+----+   
  *
  *  Touching from the inside (TI)
- *      |    +--+=====+   min_1 + size_1 = min_2 + size_2
+ *      |    +--+=====+   
  *  OR
- *      |    +====+---+   min_1 = min_2 && size_1 != size_2
+ *      |    +====+---+   
  *
  *  Not touching from the outside (NTO)
- *      |    +--+ +---+   min_1 + size_1 < min_2
+ *      |    +--+ +---+   
  *
  *  Not touching from the inside (NTI)
- *      |    +--+==+--+   min_1 + size_1 > min_2  &&  size_1 > size_2
+ *      |    +--+==+--+   
  * 
- *  Intersect
- *      |    +-----+      min_1 + size_1 > min_2  &&  size_1 < size_2
+ *  Intersect (I)
+ *      |    +-----+      
  *      |       +-----+
- *
+ * 
+ * 
+ *  1 NTO       | 2 TO      | 3 I      | 4 TI    | 5 NTI   |  6 TI    | 7 I     | 8 TO      | 9 NTO
+ *  +--+        | +--+      | +--+     | +--+    |  +--+   |    +--+  |    +--+ |      +--+ |        +--+ 
+ *       +----+ |    +----+ |   +----+ | +----+  | +----+  |  +----+  | +----+  | +----+    | +----+      
+ * 
  * @param {float} bb1Min Distance from origin of minimum point of bounding box 1 (point closest to the origin)
  * @param {float} bb2Min Distance from origin of minimum point of bounding box 2 (point closest to the origin)
  * @param {float} bb1Size Size of bounding box 1
@@ -382,30 +387,31 @@ function sphereIntersect() {
  */
 function partialBoxIntersect(bb1Min, bb2Min, bb1Size, bb2Size) {
 
-    // Rename inputs as nearBox and farBox, nearSize and farSize
-    const [nearMin, farMin, nearLen, farLen] = Math.abs(bb1Min) < Math.abs(bb2Min) 
-        ? [bb1Min, bb2Min, bb1Size, bb2Size] 
-        : [bb2Min, bb1Min, bb2Size, bb1Size]
+    const bb1Max = bb1Min + bb1Size
+    const bb2Max = bb2Min + bb2Size
 
-    const d = Math.abs(bb2Min - bb1Min)           // distance between min points
-    const sizeDiff = Math.abs(bb2Size - bb1Size)  // difference between sizes
-
-    const insideLeftTouch  = (d <= ERROR_TERM) && (sizeDiff > ERROR_TERM)  // starts are left aligned
-    const insideRightTouch = nearMin + nearLen == farMin +  farLen         // ends are right aligned
-
-    if( insideLeftTouch || insideRightTouch )
-        return InnerIntersectState.TI
-        
-    if( Math.abs(d - nearLen) <= ERROR_TERM )
-        return InnerIntersectState.TO
-
-    if( d > nearLen ) 
-        return InnerIntersectState.NTO
-        
-    if( nearLen > farLen)
-        return InnerIntersectState.NTI
+    const opposing1 = Math.abs(bb1Min - bb2Max)
+    const opposing2 = Math.abs(bb2Min - bb1Max)
+    const gap = Math.min(opposing1, opposing2)
+    const span = Math.max(opposing1, opposing2)
+ 
+    const minSize = Math.min(bb1Size, bb2Size)
+    const maxSize = Math.max(bb1Size, bb2Size)
     
-    return InnerIntersectState.I
+    if( (gap > minSize) && (span < maxSize) )                                   // 5
+        return InnerIntersectState.NTI;
+
+    if( ((gap - minSize) <= ERROR_TERM) && ((span - maxSize) <= ERROR_TERM))    // 4 & 6
+        return InnerIntersectState.TI;
+
+    if( (gap <= ERROR_TERM) && ((span - maxSize - minSize) <= ERROR_TERM))      // 2 & 8
+        return InnerIntersectState.TO;
+    
+    if(span > (maxSize + minSize))                                              // 1 & 9
+        return InnerIntersectState.NTO;
+
+    if( (gap > 0) && (span > (maxSize - minSize)))                              // 3 & 7
+        return InnerIntersectState.I;
 }
 
 /**
@@ -653,7 +659,41 @@ console.assert( combined_intersect_test, "I dominated TI and NTI to produce inte
 const combined_ti_test = combinePartialBoxIntersects([InnerIntersectState.TI,InnerIntersectState.NTI,InnerIntersectState.NTI]) == IntersectState.AMBIGUOUS
 console.assert( combined_ti_test, "TI dominated NTI to produce ambiguous");
 
-console.log("--------- tests complete ----------")
+console.log("--------- unit tests complete ----------")
+
+// Functional tests
+//
+// 1 NTO       | 2 TO      | 3 I      | 4 TI    | 5 NTI   |  6 TI    | 7 I     | 8 TO      | 9 NTO
+// +--+        | +--+      | +--+     | +--+    |  +--+   |    +--+  |    +--+ |      +--+ |        +--+ 
+//      +----+ |    +----+ |   +----+ | +----+  | +----+  |  +----+  | +----+  | +----+    | +----+      
+// 
+// 0,3         | 0,3       | 0,3      | 0,3     | 1,3     |  3,3     | 4,3     | 6,3       | 7,3    
+// 4,5         | 3,5       | 2,5      | 0,5     | 0,5     |  0,5     | 0,5     | 0,5       | 0,5
+// 
+// g=1,s=9     | g=0,s=8   | g=1,s=7  | g=3,s=5 | g=4,s=4 | g=3,s=5 | g=2,s=6 | g=0,s=8   | g=2,s=10
+//             | min + max |          | minSize |         | maxSize |         | min + max |
+// minSize = 3
+// maxSize = 5
+// 
+
+const f_test_1 = partialBoxIntersect(0,4,3,5) == InnerIntersectState.NTO
+const f_test_2 = partialBoxIntersect(0,3,3,5) == InnerIntersectState.TO
+const f_test_3 = partialBoxIntersect(0,2,3,5) == InnerIntersectState.I
+const f_test_4 = partialBoxIntersect(0,0,3,5) == InnerIntersectState.TI
+const f_test_5 = partialBoxIntersect(1,0,3,5) == InnerIntersectState.NTI
+const f_test_6 = partialBoxIntersect(2,0,3,5) == InnerIntersectState.TI
+const f_test_7 = partialBoxIntersect(3,0,3,5) == InnerIntersectState.I
+const f_test_8 = partialBoxIntersect(5,0,3,5) == InnerIntersectState.TO
+const f_test_9 = partialBoxIntersect(7,0,3,5) == InnerIntersectState.NTO
+console.assert(f_test_1);
+console.assert(f_test_2);
+console.assert(f_test_3);
+console.assert(f_test_4);
+console.assert(f_test_5);
+console.assert(f_test_6);
+console.assert(f_test_7);
+console.assert(f_test_8);
+console.assert(f_test_9);
 
 //---------------------------
 
