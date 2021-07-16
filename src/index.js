@@ -375,9 +375,50 @@ function sphereIntersect() {
  *      |       +-----+
  * 
  * 
- *  1 NTO       | 2 TO      | 3 I      | 4 TI    | 5 NTI   |  6 TI    | 7 I     | 8 TO      | 9 NTO
- *  +--+        | +--+      | +--+     | +--+    |  +--+   |    +--+  |    +--+ |      +--+ |        +--+ 
- *       +----+ |    +----+ |   +----+ | +----+  | +----+  |  +----+  | +----+  | +----+    | +----+      
+ * Functional test:
+ * 
+ *        1 NTO       | 2 TO      | 3 I      | 4 TI    | 5 NTI   |  6 TI    | 7 I     | 8 TO      | 9 NTO
+ *        +--+        | +--+      | +--+     | +--+    |  +--+   |    +--+  |    +--+ |      +--+ |        +--+ 
+ *             +----+ |    +----+ |   +----+ | +----+  | +----+  |  +----+  | +----+  | +----+    | +----+      
+ * 
+ *        (start,size)
+ *  box1: 0,3         | 0,3       | 0,3      | 0,3     | 1,3     |  3,3     | 4,3     | 6,3       | 7,3    
+ *  box2: 4,5         | 3,5       | 2,5      | 0,5     | 0,5     |  0,5     | 0,5     | 0,5       | 0,5
+ *
+ * 
+ * Gap and Span for each test case:
+ *  
+ * g=1,s=9     | g=0,s=8   | g=1,s=7  | g=3,s=5 | g=4,s=4 | g=3,s=5 | g=2,s=6 | g=0,s=8   | g=2,s=10
+ *             | min + max |          | minSize |         | maxSize |         | min + max |
+ * 
+ *
+ *           |      |       |       |       |
+ *           |------+-------+-------+-------|-----   minSize + maxSize
+ *           |      |       |       |       |
+ *           |      |       |       |       |
+ *           |------|-------+-------+-------+-----   maxSize
+ *           |      |       |   x   |       |
+ *   gap     |------|-------x-------x-------+-----   minSize
+ *           |      |       |       |   x   |   x
+ *           |  x   |   x   |       |       |
+ *           +------x-----------------------x--------
+ *              1   2   3   4   5   6   7   8   9
+ *       
+ *       
+ *       
+ *           |      |       |       |       |   x
+ *           |  x   |       |       |       |                   
+ *           | -----x-------+-------+-------x-----   minSize + maxSize
+ *           |      |   x   |       |       |
+ *           |      |       |       |   x   |
+ *           | -----+-------x-------x-------+-----   maxSize
+ *           |      |       |   x   |       |
+ *   span    | -----+-------+-------+-------+-----   minSize                     
+ *           |      |       |       |       |  
+ *           |      |       |       |       |
+ *           +---------------------------------------
+ *              1   2   3   4   5   6   7   8   9
+ * 
  * 
  * @param {float} bb1Min Distance from origin of minimum point of bounding box 1 (point closest to the origin)
  * @param {float} bb2Min Distance from origin of minimum point of bounding box 2 (point closest to the origin)
@@ -410,7 +451,7 @@ function partialBoxIntersect(bb1Min, bb2Min, bb1Size, bb2Size) {
     if(span > (maxSize + minSize))                                              // 1 & 9
         return InnerIntersectState.NTO;
 
-    if( (gap > 0) && (span > (maxSize - minSize)))                              // 3 & 7
+    if( span > maxSize)                                                         // 3 & 7
         return InnerIntersectState.I;
 }
 
